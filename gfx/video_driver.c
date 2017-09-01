@@ -1715,7 +1715,7 @@ bool video_driver_supports_rgba(void)
 {
    bool tmp;
    video_driver_lock();
-   tmp = video_driver_use_rgba;
+   tmp = false; /* temporary change to test for bug. */
    video_driver_unlock();
    return tmp;
 }
