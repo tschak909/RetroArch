@@ -1104,7 +1104,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 {
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)malloc((*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
+   unsigned user;
    global_t   *global                  = global_get_ptr();
+   char cfg[64]                        = {0};
 
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
@@ -1120,6 +1122,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("netplay_stateless_mode",        &settings->bools.netplay_stateless_mode, true, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->bools.netplay_swap_input, true, netplay_client_swap_input, false);
    SETTING_BOOL("netplay_use_mitm_server",       &settings->bools.netplay_use_mitm_server, true, netplay_use_mitm_server, false);
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      snprintf(cfg, sizeof(cfg)-1, "netplay_request_device_p%u", user + 1);
+      SETTING_BOOL(strdup(cfg), &settings->bools.netplay_request_devices[user], true, false, false);
+   }
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, input_descriptor_label_show, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
