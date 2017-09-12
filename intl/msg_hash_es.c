@@ -1819,8 +1819,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Seguir navegación";
       case MENU_ENUM_LABEL_VALUE_NEAREST:
          return "Más cercano";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
-         return "Intercambiar entrada en red";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Retraso de fotogramas en red";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
