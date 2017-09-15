@@ -275,10 +275,6 @@ VIDEO SHADERS
 #endif
 #endif
 
-#ifdef HAVE_HLSL
-#include "../gfx/drivers_shader/shader_hlsl.c"
-#endif
-
 #ifdef HAVE_GLSL
 #include "../gfx/drivers_shader/shader_glsl.c"
 #endif
@@ -943,6 +939,7 @@ NETPLAY
 #include "../network/netplay/netplay_handshake.c"
 #include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
+#include "../network/netplay/netplay_keyboard.c"
 #include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay_buf.c"
@@ -1099,6 +1096,10 @@ MENU
 #ifdef HAVE_NETWORKGAMEPAD
 #include "../input/input_remote.c"
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
+#endif
+
+#ifdef HAVE_KEYMAPPER
+#include "../input/input_mapper.c"
 #endif
 
 #include "../command.c"

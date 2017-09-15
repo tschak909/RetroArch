@@ -143,9 +143,9 @@ typedef struct settings
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
       bool netplay_stateless_mode;
-      bool netplay_swap_input;
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
+      bool netplay_request_devices[MAX_USERS];
 #endif
 
       /* Network */
@@ -199,6 +199,7 @@ typedef struct settings
       bool savestate_thumbnail_enable;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
+      bool keymapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
@@ -273,7 +274,8 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
-      unsigned input_remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
+      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
@@ -295,6 +297,8 @@ typedef struct settings
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
+      unsigned netplay_share_digital;
+      unsigned netplay_share_analog;
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;
@@ -303,6 +307,7 @@ typedef struct settings
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
+      unsigned keymapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_monitor_index;

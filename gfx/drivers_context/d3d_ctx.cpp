@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifdef _XBOX
 #include <xtl.h>
 #endif
@@ -89,6 +88,11 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data2;
 #ifdef _XBOX
+   const ui_window_t *window      = NULL;
+#else
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+#endif
+
    if (video_info->fps_show)
    {
       MEMORYSTATUS stat;
@@ -101,8 +105,6 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
-#else
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
    if (window)
    {
@@ -115,8 +117,6 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
       if (title[0])
          window->set_title(&main_window, title);
    }
-#endif
-
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
@@ -143,14 +143,16 @@ static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
    return win32_suppress_screensaver(data, enable);
 }
 
-#ifndef _XBOX
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
 
+#ifdef _XBOX
+   return false;
+#else
    return true;
-}
 #endif
+}
 
 static bool gfx_ctx_d3d_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -363,11 +365,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_set_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_suppress_screensaver,
-#ifdef _XBOX
-   NULL,
-#else
    gfx_ctx_d3d_has_windowed,
-#endif
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,

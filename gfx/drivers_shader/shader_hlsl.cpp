@@ -14,19 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_math.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
+
+#include <d3dx9shader.h>
+
+#include "../../defines/d3d_defines.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "shader_hlsl.h"
-
 #include "../video_shader_parse.h"
 #include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
+#include "../../verbosity.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
+#include "shader_hlsl.h"
 
 struct shader_program_hlsl_data 
 {
@@ -457,11 +464,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
          hlsl_data->active_idx = idx;
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-#ifdef _XBOX
-      D3DDevice_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);
-#else
       d3dr->SetPixelShader(hlsl_data->prg[idx].fprg);
-#endif
    }
 }
 

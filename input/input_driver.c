@@ -34,6 +34,10 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "input_mapper.h"
+#endif
+
 #include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
@@ -202,33 +206,15 @@ struct input_bind_map
     * 1 = Common hotkey.
     * 2 = Uncommon/obscure hotkey.
     */
-   unsigned meta;
+   uint8_t meta;
 
    const char *base;
    enum msg_hash_enums desc;
-   unsigned retro_key;
+   uint8_t retro_key;
 };
 
-static const char *bind_user_prefix[MAX_USERS] = {
-   "input_player1",
-   "input_player2",
-   "input_player3",
-   "input_player4",
-   "input_player5",
-   "input_player6",
-   "input_player7",
-   "input_player8",
-   "input_player9",
-   "input_player10",
-   "input_player11",
-   "input_player12",
-   "input_player13",
-   "input_player14",
-   "input_player15",
-   "input_player16",
-};
 
-static const unsigned buttons[] = {
+static const uint8_t buttons[] = {
    RETRO_DEVICE_ID_JOYPAD_R,
    RETRO_DEVICE_ID_JOYPAD_L,
    RETRO_DEVICE_ID_JOYPAD_X,
@@ -304,7 +290,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
       DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
       DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
-      DECLARE_META_BIND(2, netplay_flip_players_1_2, RARCH_NETPLAY_FLIP,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP),
       DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
       DECLARE_META_BIND(2, slowmotion,            RARCH_SLOWMOTION,            MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION),
       DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
@@ -363,6 +348,9 @@ static command_t *input_driver_command            = NULL;
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
+#endif
+#ifdef HAVE_KEYMAPPER
+static input_mapper_t *input_driver_mapper        = NULL;
 #endif
 const input_driver_t *current_input               = NULL;
 void *current_input_data                          = NULL;
@@ -545,7 +533,7 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
-   unsigned max_users             = input_driver_max_users;
+   uint8_t max_users              = (uint8_t)input_driver_max_users;
    
    current_input->poll(current_input_data);
 
@@ -589,6 +577,11 @@ void input_poll(void)
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
+#endif
+
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
 #endif
 }
 
@@ -673,6 +666,11 @@ int16_t input_state(unsigned port, unsigned device,
          input_remote_state(&res, port, device, idx, id);
 #endif
 
+#ifdef HAVE_KEYMAPPER
+      if (input_driver_mapper)
+         input_mapper_state(&res, port, device, idx, id);
+#endif
+
       /* Don't allow turbo for D-pad. */
       if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
                id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
@@ -716,7 +714,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = input_driver_max_users;
+   uint8_t max_users    = (uint8_t)input_driver_max_users;
 
    for (i = 0; i < max_users; i++)
    {
@@ -786,16 +784,15 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  */
 uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
-   unsigned i;
+   unsigned i, port;
    rarch_joypad_info_t joypad_info;
    uint64_t             ret                     = 0;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
    const struct retro_keybind *binds_auto       = NULL;
-   unsigned max_users                           = input_driver_max_users;
-   unsigned port;
-   unsigned port_max                  = 
+   uint8_t max_users                            = (uint8_t)input_driver_max_users;
+   uint8_t port_max                             = 
             settings->bools.input_all_users_control_menu 
             ? max_users : 1;
 
@@ -1346,6 +1343,15 @@ void input_driver_deinit_remote(void)
 #endif
 }
 
+void input_driver_deinit_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_free(input_driver_mapper);
+   input_driver_mapper = NULL;
+#endif
+}
+
 bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1365,6 +1371,26 @@ bool input_driver_init_remote(void)
 #endif
    return false;
 }
+
+bool input_driver_init_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->bools.keymapper_enable)
+      return false;
+
+   input_driver_mapper = input_mapper_new(
+         settings->uints.keymapper_port);
+
+   if (input_driver_mapper)
+      return true;
+
+   RARCH_ERR("Failed to initialize input mapper.\n");
+#endif
+   return false;
+}
+
 
 bool input_driver_grab_mouse(void)
 {
@@ -2044,7 +2070,6 @@ void input_keyboard_event(bool down, unsigned code,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 {
-
    switch (state)
    {
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
@@ -2149,11 +2174,31 @@ void input_config_parse_key(void *data,
 
 const char *input_config_get_prefix(unsigned user, bool meta)
 {
-   if (user == 0)
-      return meta ? "input" : bind_user_prefix[user];
+   static const char *bind_user_prefix[MAX_USERS] = {
+      "input_player1",
+      "input_player2",
+      "input_player3",
+      "input_player4",
+      "input_player5",
+      "input_player6",
+      "input_player7",
+      "input_player8",
+      "input_player9",
+      "input_player10",
+      "input_player11",
+      "input_player12",
+      "input_player13",
+      "input_player14",
+      "input_player15",
+      "input_player16",
+   };
+   const char *prefix = bind_user_prefix[user];
 
-   if (user != 0 && !meta)
-      return bind_user_prefix[user];
+   if (user == 0)
+      return meta ? "input" : prefix; 
+
+   if (!meta)
+      return prefix;
 
    /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
@@ -2210,14 +2255,9 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
 
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
-   uint16_t     hat;
    uint16_t hat_dir = 0;
    char        *dir = NULL;
-
-   if (!bind || !str || !isdigit((int)*str))
-      return;
-
-   hat = strtoul(str, &dir, 0);
+   uint16_t     hat = strtoul(str, &dir, 0);
 
    if (!dir)
    {
@@ -2265,7 +2305,11 @@ void input_config_parse_joy_button(void *data, const char *prefix,
       else
       {
          if (*btn == 'h')
-            parse_hat(bind, btn + 1);
+         {
+            const char *str = btn + 1;
+            if (bind && str && isdigit((int)*str))
+               parse_hat(bind, str);
+         }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
       }

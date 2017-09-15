@@ -393,11 +393,11 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
       return dst;
    }
 #endif
+   else
+      return NULL;
 #else
    return inet_ntop(af, src, dst, cnt);
 #endif
-
-   return NULL;
 }
 
 bool udp_send_packet(const char *host,

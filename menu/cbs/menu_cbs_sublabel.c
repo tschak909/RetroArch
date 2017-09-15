@@ -224,7 +224,6 @@ default_sublabel_macro(action_bind_sublabel_scan_directory,                MENU_
 default_sublabel_macro(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 default_sublabel_macro(action_bind_sublabel_sort_savefiles_enable,         MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_sort_savestates_enable,        MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
-default_sublabel_macro(action_bind_sublabel_netplay_client_swap_input,     MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT)
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_url,     MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL)
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS)
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs_port,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT)
@@ -372,15 +371,25 @@ static int action_bind_sublabel_netplay_room(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (i < 1)
+   unsigned offset        = i - 3;
+
+   if (i < 1 || offset > netplay_room_count)
       return 0;
 
+   const char *ra_version = netplay_room_list[offset].retroarch_version;
+   const char *corename   = netplay_room_list[offset].corename;
+   const char *gamename   = netplay_room_list[offset].gamename;
+   const char *core_ver   = netplay_room_list[offset].coreversion;
+   uint32_t     gamecrc   = netplay_room_list[offset].gamecrc;
+
+
    snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
-      string_is_empty(netplay_room_list[i - 3].retroarch_version) ? "n/a" : netplay_room_list[i - 3].retroarch_version,
-      netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion,
-      !string_is_equal(netplay_room_list[i - 3].gamename, "N/A") ? netplay_room_list[i - 3].gamename : "n/a", netplay_room_list[i - 3].gamecrc);
+      string_is_empty(ra_version) ? "n/a" : ra_version,
+      corename, core_ver,
+      !string_is_equal(gamename, "N/A") ? gamename : "n/a",
+      gamecrc);
 #if 0
-   strlcpy(s, netplay_room_list[i - 3].corename, len);
+   strlcpy(s, corename, len);
 #endif
    return 0;
 }
@@ -761,9 +770,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_buildbot_assets_url);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_client_swap_input);
             break;
          case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savefiles_enable);

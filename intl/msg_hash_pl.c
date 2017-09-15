@@ -354,8 +354,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Zawijanie nawigacji";
       case MENU_ENUM_LABEL_VALUE_NEAREST:
          return "Najbliższe";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
-         return "Zamień kontrolery w grze sieciowej";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Opóxnione klatki w grze sieciowej";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:

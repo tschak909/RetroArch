@@ -114,8 +114,8 @@ struct retro_keybind
    /* Used by input_{push,pop}_analog_dpad(). */
    uint32_t orig_joyaxis;
 
-   char     joykey_label[256];
-   char     joyaxis_label[256];
+   char     joykey_label[64];
+   char     joyaxis_label[64];
 };
 
 typedef struct rarch_joypad_info
@@ -396,6 +396,10 @@ bool input_driver_init_command(void);
 void input_driver_deinit_remote(void);
 
 bool input_driver_init_remote(void);
+
+void input_driver_deinit_mapper(void);
+
+bool input_driver_init_mapper(void);
 
 bool input_driver_grab_mouse(void);
 

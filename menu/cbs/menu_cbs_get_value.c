@@ -39,13 +39,20 @@
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
+
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
 
 #ifndef BIND_ACTION_GET_VALUE
 #define BIND_ACTION_GET_VALUE(cbs, name) \
    cbs->action_get_value = name; \
    cbs->action_get_value_ident = #name;
 #endif
+
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -485,6 +492,38 @@ static void menu_action_setting_disp_set_label_input_desc(
 
 }
 
+#ifdef HAVE_KEYMAPPER
+static void menu_action_setting_disp_set_label_input_desc_kbd(
+   file_list_t* list,
+   unsigned *w, unsigned type, unsigned i,
+   const char *label,
+   char *s, size_t len,
+   const char *entry_label,
+   const char *path,
+   char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned key_id;
+   unsigned remap_id = 
+      settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
+   char desc[PATH_MAX_LENGTH];
+
+   if (!settings)
+      return;
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   {
+      if(remap_id == key_descriptors[key_id].key)
+         break;
+   }
+   snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+   strlcpy(s, desc, len);
+
+   *w = 19;
+   strlcpy(s2, path, len2);
+}
+#endif
+
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -525,9 +564,9 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
 #else
          "%llu ticks, %llu runs.",
 #endif
-         ((unsigned long long)counters[offset]->total /
-          (unsigned long long)counters[offset]->call_cnt),
-         (unsigned long long)counters[offset]->call_cnt);
+         ((uint64_t)counters[offset]->total /
+          (uint64_t)counters[offset]->call_cnt),
+         (uint64_t)counters[offset]->call_cnt);
 }
 
 static void general_disp_set_label_perf_counters(
@@ -1559,6 +1598,84 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_netplay_share_digital(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   const char *src;
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->uints.netplay_share_digital)
+   {
+      case RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE);
+         break;
+
+      default:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE);
+         break;
+   }
+   strlcpy(s, src, len);
+}
+
+static void menu_action_setting_disp_set_label_netplay_share_analog(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   const char *src;
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->uints.netplay_share_analog)
+   {
+      case RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE);
+         break;
+
+      default:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE);
+         break;
+   }
+   strlcpy(s, src, len);
+}
+
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs)
 {
@@ -1658,6 +1775,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
             break;
+         case MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_netplay_share_digital);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_netplay_share_analog);
+            break;
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
@@ -1726,6 +1851,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_libretro_perf_counters);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_input_desc_kbd);
+   }
+#endif
    else
    {
       switch (type)
